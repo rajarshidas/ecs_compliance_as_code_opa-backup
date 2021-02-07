@@ -2,8 +2,8 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "sam-app"
+stack_name = "ecs-CaC-opa"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1vamuiox6a542"
-s3_prefix = "sam-app"
+s3_prefix = "ecs-CaC-opa"
 region = "us-east-1"
 capabilities = "CAPABILITY_IAM"

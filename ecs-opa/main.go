@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/storage"
@@ -36,7 +37,8 @@ func handler(event events.CloudWatchEvent) {
 	taskArn := eventBridgeECSTaskStatusChangeEventDetail.TaskArn
 	taskDefinitionArn := eventBridgeECSTaskStatusChangeEventDetail.TaskDefinitionArn
 
-	var accountId = parseAccountId(taskDefinitionArn)
+	var accountId = getAccountId()
+
 	rs, err := evaluateRules(event.Detail, accountId)
 	if err != nil {
 		log.Fatal("evaluateRules failed", err)
@@ -265,8 +267,26 @@ func marshalNotificationMessage(clusterArn, serviceArn, taskDefinitionArn, taskA
 	return json.Marshal(m)
 }
 
-func parseAccountId(taskDefinitionArn string) string {
-	return strings.Split(taskDefinitionArn, ":")[4]
+func getAccountId() string {
+	svc := sts.New(session.New())
+	input := &sts.GetCallerIdentityInput{}
+
+	result, err := svc.GetCallerIdentity(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		log.Fatal("Error getting account id")
+	}
+
+	return aws.StringValue(result.Account)
 }
 
 func parseServiceName(serviceName string) string {
