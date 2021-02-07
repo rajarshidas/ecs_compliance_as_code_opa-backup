@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ecs_compliance_as_code_opa
+  
+  Template for ecs_compliance_as_code_opa
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  ECSApprovedContainerRegistyFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ecs-opa/
+      Handler: ecs-opa
+      Runtime: go1.x
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref DevSecOpsTeamNotificationTopic
+      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - AWSLambdaBasicExecutionRole
+      - SNSPublishMessagePolicy:
+          TopicName: 
+            !Ref DevSecOpsTeamNotificationTopic
+      - Statement:
+        - Sid: ECSTaskPolicy
+          Effect: Allow
+          Action:
+          - ecs:StopTask
+          Resource: 'arn:aws:ecs:us-east-1:699773991660:task/*' 
+      - Statement:
+        - Sid: ECSServiceRWPolicy
+          Effect: Allow
+          Action:
+          - ecs:UpdateService
+          Resource: 'arn:aws:ecs:us-east-1:699773991660:service/*'
+      - Statement:
+        - Sid: ECSServiceListPolicy
+          Effect: Allow
+          Action:
+          - ecs:ListServices
+          Resource: '*'
+      - Statement:
+        - Sid: ECSTaskDefinitionPolicy
+          Effect: Allow
+          Action:
+          - ecs:DeregisterTaskDefinition
+          Resource: '*'
+      Events:
+        Trigger:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.ecs
+              detail-type:
+                - "ECS Task State Change"
+              detail:
+                desiredStatus:
+                  - "prefix": "RUN"
+  DevSecOpsTeamNotificationTopic:
+    Type: AWS::SNS::Topic
