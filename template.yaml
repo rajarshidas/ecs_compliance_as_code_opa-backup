@@ -51,6 +51,13 @@ Resources:
           Action:
           - ecs:DeregisterTaskDefinition
           Resource: '*'
+      - Statement:
+        - Sid: KMSPolicy
+          Effect: Allow
+          Action:
+          - kms:GenerateDataKey
+          - kms:Decrypt
+          Resource: !GetAtt DevSecOpsTeamNotificationTopicKey6AB29FA6.Arn
       Events:
         Trigger:
           Type: CloudWatchEvent 
@@ -65,3 +72,16 @@ Resources:
                   - "prefix": "RUN"
   DevSecOpsTeamNotificationTopic:
     Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !GetAtt DevSecOpsTeamNotificationTopicKey6AB29FA6.Arn
+  DevSecOpsTeamNotificationTopicKey6AB29FA6:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Action: kms:*
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root' 
+            Resource: '*'
+      EnableKeyRotation: true
