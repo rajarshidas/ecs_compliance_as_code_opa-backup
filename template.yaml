@@ -32,13 +32,13 @@ Resources:
           Effect: Allow
           Action:
           - ecs:StopTask
-          Resource: 'arn:aws:ecs:us-east-1:699773991660:task/*' 
+          Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/*' 
       - Statement:
         - Sid: ECSServiceRWPolicy
           Effect: Allow
           Action:
           - ecs:UpdateService
-          Resource: 'arn:aws:ecs:us-east-1:699773991660:service/*'
+          Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/*'
       - Statement:
         - Sid: ECSServiceListPolicy
           Effect: Allow
